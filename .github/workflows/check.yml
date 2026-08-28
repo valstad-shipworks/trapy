@@ -1,0 +1,67 @@
+name: Check
+
+# trapy links pyo3 unconditionally, so every `cargo test` binary links libpython
+# and needs an interpreter on every runner. There is no musl cell for the same
+# reason: no musl libpython to link against.
+#
+# The default feature set is the *consumer* build (capsule forwarding only), so
+# the subscriber backend and the two wheel ABI features get their own steps —
+# nothing else in the matrix compiles them.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
+
+    runs-on: ${{ matrix.platform.os }}
+    name: ${{ matrix.platform.target }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform.target }}
+          components: clippy
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.platform.target }}
+
+      - name: Cargo check
+        run: cargo check --target ${{ matrix.platform.target }}
+
+      - name: Clippy
+        run: cargo clippy --target ${{ matrix.platform.target }} --all-targets -- -D warnings
+
+      - name: Cargo check (-F subscribers)
+        run: cargo check --target ${{ matrix.platform.target }} -F subscribers
+
+      - name: Clippy (-F subscribers)
+        run: cargo clippy --target ${{ matrix.platform.target }} --all-targets -F subscribers -- -D warnings
+
+      - name: Cargo check (-F abi3)
+        if: matrix.platform.target == 'x86_64-unknown-linux-gnu'
+        run: cargo check --target ${{ matrix.platform.target }} -F abi3
+
+      - name: Cargo check (-F abi3t)
+        if: matrix.platform.target == 'x86_64-unknown-linux-gnu'
+        run: cargo check --target ${{ matrix.platform.target }} -F abi3t
+
+      - name: Tests
+        run: cargo test --target ${{ matrix.platform.target }} -F subscribers

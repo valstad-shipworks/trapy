@@ -1,0 +1,29 @@
+[build-system]
+requires = ["maturin>=1.9,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "trapy"
+requires-python = ">=3.10"
+description = "Python logging facade that emits real Rust `tracing` events with structured kwargs."
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: System :: Logging",
+]
+dynamic = ["version"]
+
+[project.urls]
+Repository = "https://github.com/valstad-shipworks/trapy"
+
+[tool.maturin]
+python-source = "py_src"
+module-name = "trapy._trapy"
+features = ["extension-module", "subscribers"]
+bindings = "pyo3"
+
+# `Span` is a pyo3 `#[pyclass]` declared without `subclass`, so Python can never
+# subclass it and `__enter__` returning `Span` is exact rather than too narrow.
+[tool.ruff.lint.per-file-ignores]
+"py_src/trapy/_trapy.pyi" = ["PYI034"]
