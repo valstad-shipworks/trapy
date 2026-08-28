@@ -222,10 +222,12 @@ fn trace<'py>(
 }
 
 /// One-call convenience: configure the per-category file router under
-/// `dir` and install the subscriber. Equivalent to::
+/// `dir` and install the subscriber. Equivalent to:
 ///
-///     trapy.add_file_router(dir)
-///     trapy.init_subscriber()
+/// ```python
+/// trapy.add_file_router(dir)
+/// trapy.init_subscriber()
+/// ```
 ///
 /// For multi-layer setups (fmt/env-filter/json/tracy/otel) call `add_*`
 /// directly before `init_subscriber()`.
